@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Job Reg Tracker — WITH OCR PROGRESS</title>
+    <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f5f5; --card: #ffffff; --text: #222; --muted: #666;
+            --border: #ccc; --row-alt: #f9f9f9; --btn-blue: #005ea2; --btn-blue-h: #004b82;
+            --btn-green: #2e7d32; --btn-green-h: #256628; --btn-purple: #7b1fa2; --btn-purple-h: #6a1b9a;
+            --btn-orange: #e67e22; --btn-orange-h: #d35400; --btn-red: #d32f2f; --btn-red-h: #b71c1c; --shadow: rgba(0,0,0,0.15);
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a1a; --card: #2a2a2a; --text: #eee; --muted: #aaa;
+            --border: #444; --row-alt: #333; --btn-blue: #2185d0; --btn-blue-h: #1678c2;
+            --btn-green: #28a745; --btn-green-h: #218838; --btn-purple: #9c27b0; --btn-purple-h: #8e24aa;
+            --btn-orange: #f39c12; --btn-orange-h: #e67e22; --btn-red: #e53935; --btn-red-h: #c62828; --shadow: rgba(0,0,0,0.35);
+        }
+        * {box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0; transition:0.25s;}
+        body {background:var(--bg); color:var(--text); padding:20px; max-width:1000px; margin:0 auto;}
+        .top-bar {display:flex; justify-content:flex-end; margin-bottom:15px;}
+        .theme-btn {padding:10px 16px; font-size:15px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;
+            background:linear-gradient(180deg,#666,#444); color:#fff; box-shadow:0 4px 0 #222,0 5px 8px var(--shadow); transform:translateY(-2px);}
+        .theme-btn:active {box-shadow:0 1px 0 #222; transform:translateY(2px);}
+        h1 {text-align:center; margin-bottom:20px; font-size:20px;}
+        .section {background:var(--card); padding:20px; border-radius:8px; box-shadow:0 2px 6px var(--shadow); margin-bottom:25px;}
+        .api-note {font-size:14px; color:var(--muted); background:rgba(230,126,34,.08); padding:10px; border-radius:6px; margin-bottom:12px;}
+        .btn-row {display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;}
+        .btn-row .large-btn {flex:1; min-width:160px; margin-bottom:0; padding:14px; font-size:17px;}
+        .large-btn {width:100%; padding:18px; font-size:20px; font-weight:bold; border:none; border-radius:10px; cursor:pointer; margin-bottom:15px;
+            box-shadow:0 6px 0 rgba(0,0,0,.22),0 8px 12px var(--shadow); transform:translateY(-3px);}
+        .large-btn:active {box-shadow:0 2px 0 rgba(0,0,0,.22); transform:translateY(2px);}
+        .btn-blue {background:linear-gradient(180deg,#348eda,var(--btn-blue)); color:#fff;}
+        .btn-blue:hover {background:linear-gradient(180deg,#48a0eb,var(--btn-blue-h));}
+        .btn-green {background:linear-gradient(180deg,#42b962,var(--btn-green)); color:#fff;}
+        .btn-green:hover {background:linear-gradient(180deg,#52c974,var(--btn-green-h));}
+        .btn-orange {background:linear-gradient(180deg,#f5b041,var(--btn-orange)); color:#fff;}
+        .btn-orange:hover {background:linear-gradient(180deg,#f7dc6f,var(--btn-orange-h));}
+        .btn-purple {background:linear-gradient(180deg,#ab47bc,var(--btn-purple)); color:#fff;}
+        .btn-purple:hover {background:linear-gradient(180deg,#ba68c8,var(--btn-purple-h));}
+        .btn-reset {background:linear-gradient(180deg,#e85a56,var(--btn-red)); color:#fff; margin-top:10px;}
+        .btn-reset:hover {background:linear-gradient(180deg,#f0706c,var(--btn-red-h));}
+        input[type="file"],input[type="text"],textarea {width:100%; padding:10px; margin-bottom:12px; font-size:16px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px;}
+        table {width:100%; border-collapse:collapse; margin-top:15px;}
+        th,td {padding:14px; text-align:left; border-bottom:1px solid var(--border); font-size:17px;}
+        th {background:var(--bg); font-weight:bold;}
+        tr.completed {color:var(--muted); background:var(--row-alt); text-decoration:line-through;}
+        input[type="checkbox"] {width:22px; height:22px; cursor:pointer;}
+        .status-text {font-size:15px; color:var(--muted); margin-top:8px; font-weight:500;}
+        .progress-bar {height:8px; background:#ddd; border-radius:4px; overflow:hidden; margin:6px 0 12px;}
+        .progress-fill {height:100%; background:#2e7d32; width:0%; transition:0.2s;}
+    </style>
+</head>
+<body>
+<div class="top-bar"><button class="theme-btn" id="themeSwitch" onclick="toggleTheme()">🌙 Dark Mode</button></div>
+<h1>📋 Reg Tracker — FULL + OCR PROGRESS BARS</h1>
+
+<div class="section">
+    <h3>📝 Paste Text</h3>
+    <textarea id="regInput" placeholder="PF72NWABeckton🔄 ..."></textarea>
+    <button class="large-btn btn-blue" onclick="processManual()">✅ Process Paste</button>
+</div>
+
+<div class="section">
+    <h3>📸 IMAGE — 🟢 Local • 🟠 External (Engine 3 BEST)</h3>
+    <div class="api-note">🔑 Key = <strong>K89415215588957</strong> pre‑filled • <strong>PROGRESS % shown below</strong></div>
+    <input type="text" id="ocrApiKey" value="K89415215588957">
+    <input type="file" id="imageUpload" accept="image/*">
+
+    <div class="btn-row">
+        <button class="large-btn btn-green" onclick="processLocalOCR()">🔹 LOCAL</button>
+        <button class="large-btn btn-orange" onclick="processExternalOCR()">🔸 EXTERNAL • BEST</button>
+    </div>
+
+    <!-- ✅ NEW: PROGRESS BAR + STATUS FOR BOTH -->
+    <div class="progress-bar"><div id="progFill" class="progress-fill"></div></div>
+    <p class="status-text" id="ocrStatus">⏳ Ready — progress will appear here</p>
+</div>
+
+<div class="section">
+    <h3>📋 Results</h3>
+    <table><thead><tr><th>Reg</th><th>Location</th><th>Status</th><th>Done</th></tr></thead><tbody id="tableBody"></tbody></table>
+    <br>
+    <button class="large-btn btn-purple" onclick="exportCSV()">💾 Export CSV</button>
+    <button class="large-btn btn-reset" onclick="clearAll()">🗑️ Full Reset</button>
+</div>
+
+<script>
+const locationMap={
+"PF72NWA":"Beckton","PF72ODH":"Beckton","PF72ODM":"Beckton","PF72RJV":"Beckton",
+"PF72ODR":"Beckton","PF72RJX":"Beckton","PF72HNX":"Beckton","PF72JZU":"Beckton",
+"PK22YBO":"Beckton","PL21GJJ":"Beckton","PJ72ZCL":"Beckton","PF72MZX":"Beckton"
+};
+const knownList=Object.keys(locationMap);
+
+function fixChars(s){
+    return s.toUpperCase()
+    .replace(/[^A-Z0-9\n]/g,'')
+    .replace(/O/g,'0').replace(/0/g,'O').replace(/I/g,'1').replace(/l/g,'1').replace(/S/g,'5')
+    .replace(/BECKTON|ACTIVE|🔄/g,'');
+}
+function extractAll(txt){
+    txt=fixChars(txt);
+    const found=[];
+    const p1=/[A-Z]{2}\d{2}[A-Z]{3}/g;
+    const p2=/([A-Z]{2})\D*(\d{2})\D*([A-Z]{3})/g;
+    let m;while((m=p1.exec(txt)))found.push(m[0]);
+    while((m=p2.exec(txt)))found.push(m[1]+m[2]+m[3]);
+    txt.split(/\W+/).forEach(chunk=>{
+        if(chunk.length>=6)knownList.forEach(k=>{let ok=0;for(let i=0;i<chunk.length&&i<7;i++)if(!chunk[i]||chunk[i]===k[i]||chunk[i]==='0'&&k[i]==='O'||chunk[i]==='O'&&k[i]==='0')ok++;if(ok>=6)found.push(k);});
+    });
+    return [...new Set(found)];
+}
+
+function updateProgress(pct,text){
+    document.getElementById('progFill').style.width=Math.max(0,Math.min(100,pct))+'%';
+    document.getElementById('ocrStatus').textContent=text;
+}
+
+function setTheme(m){document.documentElement.setAttribute('data-theme',m);localStorage.setItem('themePref',m);
+document.getElementById('themeSwitch').textContent=m==='dark'?'☀️ Light Mode':'🌙 Dark Mode';}
+function toggleTheme(){setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
+window.onload=()=>{setTheme(localStorage.getItem('themePref')||'light');let s=localStorage.getItem('jobTrackerData');if(s)try{buildTable(JSON.parse(s).map(i=>i.reg));}catch(e){}};
+function saveState(){localStorage.setItem('jobTrackerData',JSON.stringify([...document.querySelectorAll('tr[data-reg]')].map(tr=>({reg:tr.dataset.reg,loc:tr.dataset.loc,done:tr.classList.contains('completed')}))));}
+
+function processManual(){buildTable(extractAll(document.getElementById('regInput').value));}
+
+// ✅ LOCAL WITH REAL‑TIME PROGRESS
+async function processLocalOCR(){
+    const f=document.getElementById('imageUpload').files[0];if(!f)return alert("📸 Choose file first");
+    updateProgress(0,"🔹 Local: starting…");
+    try{
+        const res=await Tesseract.recognize(f,'eng',{psm:6,oem:3,char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+            logger:log=>{if(log.status==='recognizing text')updateProgress(Math.round(log.progress*100),`🔹 Local: ${Math.round(log.progress*100)}%`);}
+        });
+        updateProgress(100,"✅ Local done");
+        buildTable(extractAll(res.data.text));
+    }catch(e){updateProgress(0,"❌ Local failed — use 🟠 EXTERNAL");}
+}
+
+// ✅ EXTERNAL WITH CLEAR PROGRESS STEPS + ESTIMATE
+async function processExternalOCR(){
+    const f=document.getElementById('imageUpload').files[0],k=document.getElementById('ocrApiKey').value.trim();
+    if(!f||!k)return alert("📸 File + 🔑 API key needed");
+    localStorage.setItem('ocrApiKey',k);
+    updateProgress(5,"🔸 External: uploading…");
+    const fd=new FormData();
+    fd.append("file",f);fd.append("apikey",k);fd.append("language","eng");
+    fd.append("OCREngine","3");fd.append("isTable","true");fd.append("scale","true");fd.append("detectOrientation","true");
+
+    try{
+        updateProgress(25,"🔸 External: processing… (approx 5–15 sec)");
+        const res=await fetch("https://api.ocr.space/parse/image",{method:"POST",body:fd});
+        updateProgress(75,"🔸 External: reading result…");
+        const j=await res.json();
+        if(j.ParsedResults){
+            const raw=j.ParsedResults.map(p=>p.ParsedText).join('');
+            updateProgress(100,"✅ External complete");
+            buildTable(extractAll(raw));
+        } else updateProgress(0,"❌ API error — < 5 MB & crop tight");
+    }catch(e){updateProgress(0,"❌ Network blocked — use Chrome/Firefox");}
+}
+
+function buildTable(list){
+    const tb=document.getElementById('tableBody');tb.innerHTML='';
+    const items=list.filter(r=>locationMap[r]).map(r=>({reg:r,loc:locationMap[r],done:false}));
+    if(!items.length){tb.innerHTML='<tr><td colspan="4">❌ Nothing found — crop tight + use 🟠</td></tr>';return;}
+    items.forEach(i=>{const tr=document.createElement('tr');tr.dataset.reg=i.reg;tr.dataset.loc=i.loc;
+    tr.innerHTML=`<td>${i.reg}</td><td>${i.loc}</td><td>🔄 Active</td><td><input type="checkbox" onchange="tr.classList.toggle('completed');saveState()"></td>`;tb.appendChild(tr);});
+    saveState();document.getElementById('ocrStatus').textContent=`✅ Found ${items.length}/12`;
+}
+
+function clearAll(){localStorage.clear();location.reload();}
+function exportCSV(){
+    const rows=[...document.querySelectorAll('tr[data-reg]')].map(tr=>`${tr.dataset.reg},${tr.dataset.loc},${tr.classList.contains('completed')?'Complete':'Active'}`);
+    const csv=`Registration,Location,Status\n${rows.join('\n')}`;
+    const b=new Blob([csv],{type:"text/csv"});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='job-list.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+</script>
+</body></html>
