@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📋 Job Reg Tracker — WITH OCR PROGRESS</title>
+    <title>HPC Job Planner</title>
     <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
         :root {
@@ -11,26 +11,66 @@
             --border: #ccc; --row-alt: #f9f9f9; --btn-blue: #005ea2; --btn-blue-h: #004b82;
             --btn-green: #2e7d32; --btn-green-h: #256628; --btn-purple: #7b1fa2; --btn-purple-h: #6a1b9a;
             --btn-orange: #e67e22; --btn-orange-h: #d35400; --btn-red: #d32f2f; --btn-red-h: #b71c1c; --shadow: rgba(0,0,0,0.15);
+            --btn-route: #00796b; --btn-route-h: #00695c;
+            --shade1: #e8f4ff; --shade2: #fff3e8; --shade3: #f0f8e8; --shade4: #f8e8f4;
+            --shade5: #f4f8e8; --shade6: #e8f8f8;
+            --link-colour: #0066cc; --link-hover: #004499;
+            --max-width: 1100px;
+            --base-font: 16px;
+            --loc-font: 13px; /* ✅ Smaller font for Location */
+            --btn-padding: 16px 22px;
+            --section-padding: 24px;
+            --top-btn-w: 140px;
+            --reminder-bg: #fff3cd;
+            --reminder-text: #856404;
+            --progress-bg: #ddd;
+            --progress-fill: #2e7d32;
         }
         [data-theme="dark"] {
             --bg: #1a1a1a; --card: #2a2a2a; --text: #eee; --muted: #aaa;
             --border: #444; --row-alt: #333; --btn-blue: #2185d0; --btn-blue-h: #1678c2;
             --btn-green: #28a745; --btn-green-h: #218838; --btn-purple: #9c27b0; --btn-purple-h: #8e24aa;
             --btn-orange: #f39c12; --btn-orange-h: #e67e22; --btn-red: #e53935; --btn-red-h: #c62828; --shadow: rgba(0,0,0,0.35);
+            --btn-route: #26a69a; --btn-route-h: #00897b;
+            --shade1: #233240; --shade2: #403523; --shade3: #2f4023; --shade4: #40233b;
+            --shade5: #3b4023; --shade6: #234040;
+            --link-colour: #66b3ff; --link-hover: #99ccff;
+            --reminder-bg: #5a4600;
+            --reminder-text: #ffd76e;
+            --progress-bg: #444;
+            --progress-fill: #4caf50;
         }
         * {box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0; transition:0.25s;}
-        body {background:var(--bg); color:var(--text); padding:20px; max-width:1000px; margin:0 auto;}
-        .top-bar {display:flex; justify-content:flex-end; margin-bottom:15px;}
-        .theme-btn {padding:10px 16px; font-size:15px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;
-            background:linear-gradient(180deg,#666,#444); color:#fff; box-shadow:0 4px 0 #222,0 5px 8px var(--shadow); transform:translateY(-2px);}
-        .theme-btn:active {box-shadow:0 1px 0 #222; transform:translateY(2px);}
-        h1 {text-align:center; margin-bottom:20px; font-size:20px;}
-        .section {background:var(--card); padding:20px; border-radius:8px; box-shadow:0 2px 6px var(--shadow); margin-bottom:25px;}
-        .api-note {font-size:14px; color:var(--muted); background:rgba(230,126,34,.08); padding:10px; border-radius:6px; margin-bottom:12px;}
-        .btn-row {display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;}
-        .btn-row .large-btn {flex:1; min-width:160px; margin-bottom:0; padding:14px; font-size:17px;}
-        .large-btn {width:100%; padding:18px; font-size:20px; font-weight:bold; border:none; border-radius:10px; cursor:pointer; margin-bottom:15px;
-            box-shadow:0 6px 0 rgba(0,0,0,.22),0 8px 12px var(--shadow); transform:translateY(-3px);}
+        body {background:var(--bg); color:var(--text); padding:16px; font-size:var(--base-font); max-width:var(--max-width); margin:0 auto;}
+
+        .app-title {text-align:center; font-size:28px; font-weight:bold; margin-bottom:16px;}
+        .top-controls {display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:12px; flex-wrap:wrap;}
+        .top-btn {width:var(--top-btn-w); padding:var(--btn-padding); font-size:17px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;
+            box-shadow:0 4px 0 rgba(0,0,0,.2),0 5px 8px var(--shadow); transform:translateY(-2px);}
+        .top-btn:active {box-shadow:0 1px 0 rgba(0,0,0,.2); transform:translateY(2px);}
+        .reset-btn {background:linear-gradient(180deg,#e85a56,var(--btn-red)); color:#fff;}
+        .reset-btn:hover {background:linear-gradient(180deg,#f0706c,var(--btn-red-h));}
+        .theme-btn {background:linear-gradient(180deg,#666,#444); color:#fff;}
+
+        .import-wrap {text-align:center; margin-bottom:20px;}
+        .import-btn {display:inline-block; padding:22px 40px; font-size:22px; font-weight:bold; border-radius:12px; border:none; cursor:pointer;
+            background:linear-gradient(180deg,#42b962,var(--btn-green)); color:#fff; box-shadow:0 8px 0 rgba(0,0,0,.22),0 10px 16px var(--shadow); transform:translateY(-3px); width:100%; max-width:420px;}
+        .import-btn:hover {background:linear-gradient(180deg,#52c974,var(--btn-green-h));}
+        .import-btn:active {box-shadow:0 2px 0 rgba(0,0,0,.22); transform:translateY(2px);}
+        #imageUpload {display:none;}
+
+        .postcode-section {width:100%; margin-bottom:24px;}
+        .postcode-input {width:100%; padding:14px; font-size:17px; background:var(--bg); color:var(--text); border:2px solid var(--border); border-radius:8px;}
+        .ocr-progress-bar {width:100%; height:10px; background:var(--progress-bg); border-radius:5px; overflow:hidden; margin:10px 0; display:none;}
+        .ocr-progress-fill {height:100%; width:0%; background:var(--progress-fill); transition:0.2s;}
+        .reminder-text {width:100%; margin-top:8px; padding:10px 14px; background:var(--reminder-bg); color:var(--reminder-text); font-weight:bold; text-align:center; border-radius:6px; font-size:16px;}
+
+        .section {background:var(--card); padding:var(--section-padding); border-radius:10px; box-shadow:0 3px 8px var(--shadow); margin-bottom:24px; width:100% !important; max-width:100%; overflow-x:auto;}
+        .api-note {font-size:15px; color:var(--muted); background:rgba(230,126,34,.08); padding:12px; border-radius:6px; margin-bottom:14px; line-height:1.5;}
+        .btn-row {display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+        .btn-row .large-btn {flex:1; min-width:180px; padding:var(--btn-padding); font-size:18px;}
+        .large-btn {width:100%; padding:20px; font-size:20px; font-weight:bold; border:none; border-radius:10px; cursor:pointer; margin-bottom:18px;
+            box-shadow:0 6px 0 rgba(0,0,0,.22),0 8px 14px var(--shadow); transform:translateY(-3px);}
         .large-btn:active {box-shadow:0 2px 0 rgba(0,0,0,.22); transform:translateY(2px);}
         .btn-blue {background:linear-gradient(180deg,#348eda,var(--btn-blue)); color:#fff;}
         .btn-blue:hover {background:linear-gradient(180deg,#48a0eb,var(--btn-blue-h));}
@@ -40,142 +80,327 @@
         .btn-orange:hover {background:linear-gradient(180deg,#f7dc6f,var(--btn-orange-h));}
         .btn-purple {background:linear-gradient(180deg,#ab47bc,var(--btn-purple)); color:#fff;}
         .btn-purple:hover {background:linear-gradient(180deg,#ba68c8,var(--btn-purple-h));}
-        .btn-reset {background:linear-gradient(180deg,#e85a56,var(--btn-red)); color:#fff; margin-top:10px;}
-        .btn-reset:hover {background:linear-gradient(180deg,#f0706c,var(--btn-red-h));}
-        input[type="file"],input[type="text"],textarea {width:100%; padding:10px; margin-bottom:12px; font-size:16px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px;}
-        table {width:100%; border-collapse:collapse; margin-top:15px;}
-        th,td {padding:14px; text-align:left; border-bottom:1px solid var(--border); font-size:17px;}
-        th {background:var(--bg); font-weight:bold;}
+        .btn-route {background:linear-gradient(180deg,var(--btn-route),var(--btn-route-h)); color:#fff;}
+        .btn-route:hover {background:linear-gradient(180deg,#4db6ac,var(--btn-route));}
+        input[type="text"],textarea {width:100%; padding:14px; margin-bottom:14px; font-size:17px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:8px;}
+        .route-input-row {display:flex; gap:14px; align-items:center; margin-bottom:18px; flex-wrap:wrap;}
+        .route-input-row input {flex:1; min-width:220px; margin:0;}
+
+        /* ✅ BASE TABLE: Location column wider, smaller font, 2‑line wrap */
+        table {width:100%; border-collapse:collapse; margin-top:18px; font-size:15px; table-layout:fixed;}
+        th,td {padding:10px 8px; text-align:left; border-bottom:1px solid var(--border); line-height:1.4;}
+        th {background:var(--bg); font-weight:bold; font-size:14px;}
+        .loc-col {font-size:var(--loc-font) !important; white-space:normal !important; line-height:1.4;}
+
+        /* ✅ EXTRACTED JOBS: Location widest column */
+        #tableBody + table th:nth-child(1), #tableBody + table td:nth-child(1) {width:14%;}
+        #tableBody + table th:nth-child(2), #tableBody + table td:nth-child(2) {width:58%;} /* ✅ Wider Location */
+        #tableBody + table th:nth-child(3), #tableBody + table td:nth-child(3) {width:20%;}
+        #tableBody + table th:nth-child(4), #tableBody + table td:nth-child(4) {width:8%; text-align:center;}
+
+        /* ✅ ROUTE PLANNER: # narrow, Location widest & 2‑line */
+        .route-table th:nth-child(1), .route-table td:nth-child(1) {width:28px !important; text-align:center;}
+        .route-table th:nth-child(2), .route-table td:nth-child(2) {width:23%;}
+        .route-table th:nth-child(3), .route-table td:nth-child(3) {width:45%;} /* ✅ Widest column */
+        .route-table th:nth-child(4), .route-table td:nth-child(4) {width:18%;}
+        .route-table th:nth-child(5), .route-table td:nth-child(5) {width:8%; text-align:center;}
+
         tr.completed {color:var(--muted); background:var(--row-alt); text-decoration:line-through;}
+        .group-0 {background:var(--shade1);}
+        .group-1 {background:var(--shade2);}
+        .group-2 {background:var(--shade3);}
+        .group-3 {background:var(--shade4);}
+        .group-4 {background:var(--shade5);}
+        .group-5 {background:var(--shade6);}
+        a.map-link {color:var(--link-colour); text-decoration:none;}
+        a.map-link:hover {color:var(--link-hover); text-decoration:underline;}
         input[type="checkbox"] {width:22px; height:22px; cursor:pointer;}
-        .status-text {font-size:15px; color:var(--muted); margin-top:8px; font-weight:500;}
-        .progress-bar {height:8px; background:#ddd; border-radius:4px; overflow:hidden; margin:6px 0 12px;}
-        .progress-fill {height:100%; background:#2e7d32; width:0%; transition:0.2s;}
+        .status-text {font-size:16px; color:var(--muted); margin-top:10px; font-weight:500; line-height:1.4;}
+
+        /* ✅ RESPONSIVE: keep proportions & wrapping */
+        @media(min-width:768px){
+            body{padding:24px;}
+            :root {--loc-font:14px;}
+            th,td{padding:12px 10px;}
+        }
+        @media(min-width:1200px){
+            :root {--base-font:18px; --btn-padding:18px 26px; --section-padding:28px; --top-btn-w:150px; --loc-font:15px;}
+            .app-title {font-size:32px;}
+            .import-btn {padding:24px 48px; font-size:24px; max-width:480px;}
+            table {font-size:17px;}
+            th,td {padding:14px 12px;}
+        }
     </style>
 </head>
 <body>
-<div class="top-bar"><button class="theme-btn" id="themeSwitch" onclick="toggleTheme()">🌙 Dark Mode</button></div>
-<h1>📋 Reg Tracker — FULL + OCR PROGRESS BARS</h1>
+
+<div class="app-title">HPC Job Planner</div>
+
+<div class="top-controls">
+    <button class="top-btn reset-btn" onclick="softReset()">🗑️ Clear Jobs</button>
+    <button class="top-btn theme-btn" id="themeSwitch" onclick="toggleTheme()">🌙 Dark Mode</button>
+</div>
+
+<div class="import-wrap">
+    <label class="import-btn" for="imageUpload">📸 Import Screenshot</label>
+    <input type="file" id="imageUpload" accept="image/*" onchange="handleImageSelect(event)">
+</div>
+
+<div class="postcode-section">
+    <input class="postcode-input" type="text" id="startPostcode" placeholder="🏠 Start/Home Postcode">
+    <div class="ocr-progress-bar" id="ocrProgressBar"><div class="ocr-progress-fill" id="ocrProgressFill"></div></div>
+    <div class="reminder-text">⚠️ Add Start Postcode first before importing</div>
+</div>
 
 <div class="section">
-    <h3>📝 Paste Text</h3>
-    <textarea id="regInput" placeholder="PF72NWABeckton🔄 ..."></textarea>
+    <h3>📝 Paste Text (Manual Input)</h3>
+    <textarea id="regInput" placeholder="1073969 - Sainsbury's... PF24MTV... York Road Uxbridge UB8 1QW"></textarea>
     <button class="large-btn btn-blue" onclick="processManual()">✅ Process Paste</button>
 </div>
 
-<div class="section">
-    <h3>📸 IMAGE — 🟢 Local • 🟠 External (Engine 3 BEST)</h3>
-    <div class="api-note">🔑 Key = <strong>K89415215588957</strong> pre‑filled • <strong>PROGRESS % shown below</strong></div>
+<div class="section" style="display:none;">
+    <h3>⚙️ API Settings</h3>
     <input type="text" id="ocrApiKey" value="K89415215588957">
-    <input type="file" id="imageUpload" accept="image/*">
-
-    <div class="btn-row">
-        <button class="large-btn btn-green" onclick="processLocalOCR()">🔹 LOCAL</button>
-        <button class="large-btn btn-orange" onclick="processExternalOCR()">🔸 EXTERNAL • BEST</button>
-    </div>
-
-    <!-- ✅ NEW: PROGRESS BAR + STATUS FOR BOTH -->
-    <div class="progress-bar"><div id="progFill" class="progress-fill"></div></div>
-    <p class="status-text" id="ocrStatus">⏳ Ready — progress will appear here</p>
 </div>
 
 <div class="section">
-    <h3>📋 Results</h3>
-    <table><thead><tr><th>Reg</th><th>Location</th><th>Status</th><th>Done</th></tr></thead><tbody id="tableBody"></tbody></table>
+    <h3>📋 Extracted Job List</h3>
+    <table><thead><tr><th>Reg</th><th class="loc-col">Location</th><th>Job ID</th><th>✅</th></tr></thead><tbody id="tableBody"></tbody></table>
     <br>
     <button class="large-btn btn-purple" onclick="exportCSV()">💾 Export CSV</button>
-    <button class="large-btn btn-reset" onclick="clearAll()">🗑️ Full Reset</button>
+</div>
+
+<div class="section">
+    <h3>🛣️ Optimised Route Plan</h3>
+    <p class="status-text" id="routeStatus">ℹ️ Zero distance = same address → shaded group; click address to open map</p>
+    <table class="route-table"><thead><tr><th>#</th><th>Reg</th><th class="loc-col">Location</th><th>Dist (mi)</th><th>✅</th></tr></thead><tbody id="routeTableBody"></tbody></table>
+    <br>
+    <button class="large-btn btn-route" style="width:auto;" onclick="exportOptimisedRoute()">📄 Export Optimised Locations</button>
 </div>
 
 <script>
-const locationMap={
-"PF72NWA":"Beckton","PF72ODH":"Beckton","PF72ODM":"Beckton","PF72RJV":"Beckton",
-"PF72ODR":"Beckton","PF72RJX":"Beckton","PF72HNX":"Beckton","PF72JZU":"Beckton",
-"PK22YBO":"Beckton","PL21GJJ":"Beckton","PJ72ZCL":"Beckton","PF72MZX":"Beckton"
+const fallbackAddressMap={
+"PF72NWA":"1 Claps Gate Lane Beckton E6 6JJ","PF72ODH":"1 Claps Gate Lane Beckton E6 6JJ","PF72ODM":"1 Claps Gate Lane Beckton E6 6JJ","PF72RJV":"1 Claps Gate Lane Beckton E6 6JJ",
+"PF72ODR":"1 Claps Gate Lane Beckton E6 6JJ","PF72RJX":"1 Claps Gate Lane Beckton E6 6JJ","PF72HNX":"1 Claps Gate Lane Beckton E6 6JJ","PF72JZU":"1 Claps Gate Lane Beckton E6 6JJ",
+"PK22YBO":"1 Claps Gate Lane Beckton E6 6JJ","PL21GJJ":"1 Claps Gate Lane Beckton E6 6JJ","PJ72ZCL":"1 Claps Gate Lane Beckton E6 6JJ","PF72MZX":"1 Claps Gate Lane Beckton E6 6JJ",
+"PF24MTV":"York Road Uxbridge UB8 1QW","PF24MTU":"York Road Uxbridge UB8 1QW","PF24MTX":"York Road Uxbridge UB8 1QW","PF24MKG":"York Road Uxbridge UB8 1QW"
 };
-const knownList=Object.keys(locationMap);
+let originalOrder=[];
+let extractedJobs=[];
+let routeData=[];
 
-function fixChars(s){
-    return s.toUpperCase()
-    .replace(/[^A-Z0-9\n]/g,'')
-    .replace(/O/g,'0').replace(/0/g,'O').replace(/I/g,'1').replace(/l/g,'1').replace(/S/g,'5')
-    .replace(/BECKTON|ACTIVE|🔄/g,'');
-}
+function fixChars(s){return s.toUpperCase();}
 function extractAll(txt){
     txt=fixChars(txt);
-    const found=[];
-    const p1=/[A-Z]{2}\d{2}[A-Z]{3}/g;
-    const p2=/([A-Z]{2})\D*(\d{2})\D*([A-Z]{3})/g;
-    let m;while((m=p1.exec(txt)))found.push(m[0]);
-    while((m=p2.exec(txt)))found.push(m[1]+m[2]+m[3]);
-    txt.split(/\W+/).forEach(chunk=>{
-        if(chunk.length>=6)knownList.forEach(k=>{let ok=0;for(let i=0;i<chunk.length&&i<7;i++)if(!chunk[i]||chunk[i]===k[i]||chunk[i]==='0'&&k[i]==='O'||chunk[i]==='O'&&k[i]==='0')ok++;if(ok>=6)found.push(k);});
+    const results=[];
+    const regPattern=/[A-Z]{2}\d{2}[A-Z]{3}/g;
+    const jobIdPattern=/\b107\d{4}\b/g;
+    const anyAddressPattern=/.*?[A-Z]{1,2}\s*\d{1,2}\s+\d[A-Z]{2}/gi;
+    const postcodeOnlyPattern=/[A-Z]{1,2}\s*\d{1,2}\s+\d[A-Z]{2}/gi;
+
+    let regs=txt.match(regPattern)||[];
+    let jobIds=txt.match(jobIdPattern)||[];
+    let addrs=txt.match(anyAddressPattern)||[];
+    let purePcs=txt.match(postcodeOnlyPattern)||[];
+    regs=[...new Set(regs)];
+
+    regs.forEach((reg,i)=>{
+        const jobId=jobIds[i]||"";
+        let address=addrs[i]?.trim() || purePcs[i]?.trim() || fallbackAddressMap[reg] || "Address not found";
+        results.push({reg,jobId,address});
     });
-    return [...new Set(found)];
+    extractedJobs=results;
+    return results;
 }
 
-function updateProgress(pct,text){
-    document.getElementById('progFill').style.width=Math.max(0,Math.min(100,pct))+'%';
-    document.getElementById('ocrStatus').textContent=text;
+function setOCRProgress(pct){
+    const bar=document.getElementById('ocrProgressBar');
+    const fill=document.getElementById('ocrProgressFill');
+    if(pct<=0){bar.style.display='none'; fill.style.width='0%';}
+    else{bar.style.display='block'; fill.style.width=Math.max(0,Math.min(100,pct))+'%';}
 }
 
 function setTheme(m){document.documentElement.setAttribute('data-theme',m);localStorage.setItem('themePref',m);
 document.getElementById('themeSwitch').textContent=m==='dark'?'☀️ Light Mode':'🌙 Dark Mode';}
 function toggleTheme(){setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
-window.onload=()=>{setTheme(localStorage.getItem('themePref')||'light');let s=localStorage.getItem('jobTrackerData');if(s)try{buildTable(JSON.parse(s).map(i=>i.reg));}catch(e){}};
-function saveState(){localStorage.setItem('jobTrackerData',JSON.stringify([...document.querySelectorAll('tr[data-reg]')].map(tr=>({reg:tr.dataset.reg,loc:tr.dataset.loc,done:tr.classList.contains('completed')}))));}
 
-function processManual(){buildTable(extractAll(document.getElementById('regInput').value));}
+window.onload=()=>{
+    setTheme(localStorage.getItem('themePref')||'light');
+    const savedPostcode=localStorage.getItem('lastStartPostcode')||'';
+    document.getElementById('startPostcode').value=savedPostcode;
+    document.getElementById('startPostcode').addEventListener('change',()=>{
+        localStorage.setItem('lastStartPostcode',document.getElementById('startPostcode').value.trim());
+    });
+    let s=localStorage.getItem('jobTrackerData');if(s)try{buildTable(JSON.parse(s));}catch(e){}
+};
 
-// ✅ LOCAL WITH REAL‑TIME PROGRESS
-async function processLocalOCR(){
-    const f=document.getElementById('imageUpload').files[0];if(!f)return alert("📸 Choose file first");
-    updateProgress(0,"🔹 Local: starting…");
-    try{
-        const res=await Tesseract.recognize(f,'eng',{psm:6,oem:3,char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-            logger:log=>{if(log.status==='recognizing text')updateProgress(Math.round(log.progress*100),`🔹 Local: ${Math.round(log.progress*100)}%`);}
-        });
-        updateProgress(100,"✅ Local done");
-        buildTable(extractAll(res.data.text));
-    }catch(e){updateProgress(0,"❌ Local failed — use 🟠 EXTERNAL");}
+function softReset(){
+    extractedJobs=[]; routeData=[]; originalOrder=[];
+    document.getElementById('tableBody').innerHTML='';
+    document.getElementById('routeTableBody').innerHTML='';
+    setOCRProgress(0);
+    document.getElementById('routeStatus').textContent='ℹ️ Zero distance = same address → shaded group; click address to open map';
+    localStorage.removeItem('jobTrackerData');
 }
 
-// ✅ EXTERNAL WITH CLEAR PROGRESS STEPS + ESTIMATE
-async function processExternalOCR(){
-    const f=document.getElementById('imageUpload').files[0],k=document.getElementById('ocrApiKey').value.trim();
-    if(!f||!k)return alert("📸 File + 🔑 API key needed");
-    localStorage.setItem('ocrApiKey',k);
-    updateProgress(5,"🔸 External: uploading…");
-    const fd=new FormData();
-    fd.append("file",f);fd.append("apikey",k);fd.append("language","eng");
-    fd.append("OCREngine","3");fd.append("isTable","true");fd.append("scale","true");fd.append("detectOrientation","true");
+function saveState(){
+    const rows=[...document.querySelectorAll('tr[data-reg]')];
+    localStorage.setItem('jobTrackerData',JSON.stringify(rows.map(tr=>({
+        reg:tr.dataset.reg,jobId:tr.dataset.jobid,address:tr.dataset.address,done:tr.classList.contains('completed')
+    }))));
+}
+function reorderTable(){
+    const tb=document.getElementById('tableBody');
+    const rows=[...tb.querySelectorAll('tr[data-reg]')];
+    const active=rows.filter(r=>!r.classList.contains('completed'));
+    const done=rows.filter(r=>r.classList.contains('completed'));
+    tb.innerHTML='';
+    originalOrder.forEach(reg=>{const r=active.find(x=>x.dataset.reg===reg);if(r)tb.appendChild(r);});
+    done.forEach(r=>tb.appendChild(r));
+}
+function toggleDone(reg){
+    const row=document.querySelector(`tr[data-reg="${reg}"]`);
+    row.classList.toggle('completed');reorderTable();saveState();
+}
 
+async function getPostcodeCoords(postcode){
     try{
-        updateProgress(25,"🔸 External: processing… (approx 5–15 sec)");
-        const res=await fetch("https://api.ocr.space/parse/image",{method:"POST",body:fd});
-        updateProgress(75,"🔸 External: reading result…");
-        const j=await res.json();
-        if(j.ParsedResults){
-            const raw=j.ParsedResults.map(p=>p.ParsedText).join('');
-            updateProgress(100,"✅ External complete");
-            buildTable(extractAll(raw));
-        } else updateProgress(0,"❌ API error — < 5 MB & crop tight");
-    }catch(e){updateProgress(0,"❌ Network blocked — use Chrome/Firefox");}
+        const res=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode.trim())}`);
+        const data=await res.json();
+        if(data.status===200&&data.result)return{lat:data.result.latitude,lon:data.result.longitude,postcode:data.result.postcode};
+    }catch(e){return null;}
+    return null;
+}
+function calcDistanceKm(p1,p2){
+    const R=6371;
+    const dLat=(p2.lat-p1.lat)*Math.PI/180;
+    const dLon=(p2.lon-p1.lon)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(p1.lat*Math.PI/180)*Math.cos(p2.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*(2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+}
+function kmToMiles(km){return (km*0.621371).toFixed(2);}
+function extractPostcodeFromAddress(addr){
+    const m=addr.match(/[A-Z]{1,2}\s*\d{1,2}\s+\d[A-Z]{2}$/i);
+    return m?m[0].toUpperCase().trim():null;
+}
+function getGoogleMapsLink(locationText){
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationText)}`;
+}
+
+async function planOptimisedRoute(){
+    const startPc=document.getElementById('startPostcode').value.trim();
+    if(!startPc) return document.getElementById('routeStatus').textContent="⚠️ No start postcode — skipped";
+    localStorage.setItem('lastStartPostcode',startPc);
+
+    const statusEl=document.getElementById('routeStatus');
+    const tableEl=document.getElementById('routeTableBody');
+    if(!extractedJobs.length)return statusEl.textContent="⚠️ No job addresses extracted yet";
+
+    statusEl.textContent="🔄 Fetching postcodes & optimising…";tableEl.innerHTML='';
+    const startPoint=await getPostcodeCoords(startPc);
+    if(!startPoint)return statusEl.textContent="❌ Invalid or unreachable start postcode";
+
+    const jobsWithCoords=[];
+    for(const job of extractedJobs){
+        const jobPc=extractPostcodeFromAddress(job.address);
+        const coords=jobPc?(await getPostcodeCoords(jobPc)):null;
+        jobsWithCoords.push({...job,coords:coords||startPoint,postcode:jobPc||startPc});
+    }
+
+    const optimised=[];
+    const distances=[];
+    let current=startPoint;
+    const remaining=[...jobsWithCoords];
+    while(remaining.length>0){
+        remaining.sort((a,b)=>calcDistanceKm(current,a.coords)-calcDistanceKm(current,b.coords));
+        const next=remaining.shift();
+        const distKm=calcDistanceKm(current,next.coords);
+        distances.push(kmToMiles(distKm));
+        optimised.push(next);
+        current=next.coords;
+    }
+
+    for(let i=1;i<optimised.length;i++){
+        if(optimised[i].postcode===optimised[i-1].postcode) distances[i]="0.00";
+    }
+
+    routeData=optimised.map((j,i)=>({stop:i+1,reg:j.reg,address:j.address,distanceMi:distances[i],jobId:j.jobId,postcode:j.postcode}));
+    window.routeOriginalOrder=optimised.map(j=>j.reg);
+    renderOptimisedRoute(routeData);
+    statusEl.textContent="✅ Route ready — click address to open Google Maps";
+}
+function renderOptimisedRoute(list){
+    const tb=document.getElementById('routeTableBody');tb.innerHTML='';
+    let groupIdx=0;
+    const shadeClasses=["group-0","group-1","group-2","group-3","group-4","group-5"];
+    list.forEach((item,idx)=>{
+        if(idx===0 || item.distanceMi!=="0.00") groupIdx=(groupIdx+1)%shadeClasses.length;
+        const tr=document.createElement('tr');
+        tr.dataset.reg=item.reg;tr.classList.add('route-row',shadeClasses[groupIdx]);
+        const addressLink=`<a href="${getGoogleMapsLink(item.address)}" target="_blank" rel="noopener noreferrer" class="map-link">${item.address}</a>`;
+        tr.innerHTML=`<td>${item.stop}</td><td>${item.reg}</td><td class="loc-col">${addressLink}</td><td>${item.distanceMi}</td><td><input type="checkbox" onchange="toggleRouteDone('${item.reg}')"></td>`;
+        tb.appendChild(tr);
+    });
+}
+function toggleRouteDone(reg){
+    const tb=document.getElementById('routeTableBody');
+    const rows=[...tb.querySelectorAll('tr.route-row')];
+    const row=rows.find(r=>r.dataset.reg===reg);if(!row)return;
+    row.classList.toggle('completed');
+    const active=rows.filter(r=>!r.classList.contains('completed'));
+    const done=rows.filter(r=>r.classList.contains('completed'));
+    tb.innerHTML='';
+    window.routeOriginalOrder.forEach(regId=>{const r=active.find(x=>x.dataset.reg===regId);if(r)tb.appendChild(r);});
+    done.forEach(r=>tb.appendChild(r));
+}
+function exportOptimisedRoute(){
+    if(!routeData.length)return alert("⚠️ No optimised route available — plan journey first");
+    let txt="OPTIMISED ROUTE PLAN — GROUPED BY LOCATION\n";
+    txt+="==========================================\n\n";
+    routeData.forEach(item=>{
+        txt+=`Stop ${item.stop} | Dist: ${item.distanceMi} mi\n`;
+        txt+=`  Reg: ${item.reg}\n  Location: ${item.address}\n\n`;
+    });
+    const b=new Blob([txt],{type:"text/plain;charset=utf-8"});
+    const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='optimised-route-grouped.txt';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
 function buildTable(list){
     const tb=document.getElementById('tableBody');tb.innerHTML='';
-    const items=list.filter(r=>locationMap[r]).map(r=>({reg:r,loc:locationMap[r],done:false}));
-    if(!items.length){tb.innerHTML='<tr><td colspan="4">❌ Nothing found — crop tight + use 🟠</td></tr>';return;}
-    items.forEach(i=>{const tr=document.createElement('tr');tr.dataset.reg=i.reg;tr.dataset.loc=i.loc;
-    tr.innerHTML=`<td>${i.reg}</td><td>${i.loc}</td><td>🔄 Active</td><td><input type="checkbox" onchange="tr.classList.toggle('completed');saveState()"></td>`;tb.appendChild(tr);});
-    saveState();document.getElementById('ocrStatus').textContent=`✅ Found ${items.length}/12`;
+    if(!list.length){tb.innerHTML='<tr><td colspan="4">❌ Nothing found — crop tight</td></tr>';return;}
+    originalOrder=list.map(i=>i.reg);
+    list.forEach(i=>{
+        const tr=document.createElement('tr');
+        tr.dataset.reg=i.reg;tr.dataset.jobid=i.jobId;tr.dataset.address=i.address;
+        tr.innerHTML=`<td>${i.reg}</td><td class="loc-col">${i.address}</td><td>${i.jobId||"—"}</td><td><input type="checkbox" onchange="toggleDone('${i.reg}')"></td>`;
+        tb.appendChild(tr);
+    });
+    saveState();
+}
+function processManual(){buildTable(extractAll(document.getElementById('regInput').value));}
+
+async function handleImageSelect(e){
+    const f=e.target.files[0];if(!f)return;
+    setOCRProgress(5);
+    try{
+        const res=await Tesseract.recognize(f,'eng',{psm:6,oem:3,logger:log=>{
+            if(log.status==='recognizing text') setOCRProgress(Math.round(log.progress*100));
+        }});
+        setOCRProgress(100);
+        buildTable(extractAll(res.data.text));
+        if(document.getElementById('startPostcode').value.trim()) setTimeout(planOptimisedRoute,300);
+    }catch(err){
+        setOCRProgress(0);
+        alert("❌ OCR failed — try clearer image");
+    }finally{
+        setTimeout(()=>setOCRProgress(0),800);
+    }
 }
 
-function clearAll(){localStorage.clear();location.reload();}
 function exportCSV(){
-    const rows=[...document.querySelectorAll('tr[data-reg]')].map(tr=>`${tr.dataset.reg},${tr.dataset.loc},${tr.classList.contains('completed')?'Complete':'Active'}`);
-    const csv=`Registration,Location,Status\n${rows.join('\n')}`;
+    const rows=[...document.querySelectorAll('tr[data-reg]')].map(tr=>`${tr.dataset.reg},"${tr.dataset.address}",${tr.dataset.jobid},${tr.classList.contains('completed')?'Complete':'Active'}`);
+    const csv=`Registration,Location,Job ID,Status\n${rows.join('\n')}`;
     const b=new Blob([csv],{type:"text/csv"});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='job-list.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 </script>
