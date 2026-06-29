@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HPC Job Planner</title>
-    <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+    <title>HPC Job Planner — External OCR</title>
+    <!-- ❌ REMOVED: <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script> -->
     <style>
         :root {
             --bg: #f5f5f5; --card: #ffffff; --text: #222; --muted: #666;
@@ -17,7 +17,7 @@
             --link-colour: #0066cc; --link-hover: #004499;
             --max-width: 1100px;
             --base-font: 16px;
-            --loc-font: 13px; /* ✅ Smaller font for Location */
+            --loc-font: 13px;
             --btn-padding: 16px 22px;
             --section-padding: 24px;
             --top-btn-w: 140px;
@@ -86,22 +86,19 @@
         .route-input-row {display:flex; gap:14px; align-items:center; margin-bottom:18px; flex-wrap:wrap;}
         .route-input-row input {flex:1; min-width:220px; margin:0;}
 
-        /* ✅ BASE TABLE: Location column wider, smaller font, 2‑line wrap */
         table {width:100%; border-collapse:collapse; margin-top:18px; font-size:15px; table-layout:fixed;}
         th,td {padding:10px 8px; text-align:left; border-bottom:1px solid var(--border); line-height:1.4;}
         th {background:var(--bg); font-weight:bold; font-size:14px;}
         .loc-col {font-size:var(--loc-font) !important; white-space:normal !important; line-height:1.4;}
 
-        /* ✅ EXTRACTED JOBS: Location widest column */
         #tableBody + table th:nth-child(1), #tableBody + table td:nth-child(1) {width:14%;}
-        #tableBody + table th:nth-child(2), #tableBody + table td:nth-child(2) {width:58%;} /* ✅ Wider Location */
+        #tableBody + table th:nth-child(2), #tableBody + table td:nth-child(2) {width:58%;}
         #tableBody + table th:nth-child(3), #tableBody + table td:nth-child(3) {width:20%;}
         #tableBody + table th:nth-child(4), #tableBody + table td:nth-child(4) {width:8%; text-align:center;}
 
-        /* ✅ ROUTE PLANNER: # narrow, Location widest & 2‑line */
         .route-table th:nth-child(1), .route-table td:nth-child(1) {width:28px !important; text-align:center;}
         .route-table th:nth-child(2), .route-table td:nth-child(2) {width:23%;}
-        .route-table th:nth-child(3), .route-table td:nth-child(3) {width:45%;} /* ✅ Widest column */
+        .route-table th:nth-child(3), .route-table td:nth-child(3) {width:45%;}
         .route-table th:nth-child(4), .route-table td:nth-child(4) {width:18%;}
         .route-table th:nth-child(5), .route-table td:nth-child(5) {width:8%; text-align:center;}
 
@@ -117,7 +114,6 @@
         input[type="checkbox"] {width:22px; height:22px; cursor:pointer;}
         .status-text {font-size:16px; color:var(--muted); margin-top:10px; font-weight:500; line-height:1.4;}
 
-        /* ✅ RESPONSIVE: keep proportions & wrapping */
         @media(min-width:768px){
             body{padding:24px;}
             :root {--loc-font:14px;}
@@ -134,7 +130,7 @@
 </head>
 <body>
 
-<div class="app-title">HPC Job Planner</div>
+<div class="app-title">HPC Job Planner — HIGH‑RES OCR</div>
 
 <div class="top-controls">
     <button class="top-btn reset-btn" onclick="softReset()">🗑️ Clear Jobs</button>
@@ -142,25 +138,20 @@
 </div>
 
 <div class="import-wrap">
-    <label class="import-btn" for="imageUpload">📸 Import Screenshot</label>
+    <label class="import-btn" for="imageUpload">📸 Import High‑Res Screenshot</label>
     <input type="file" id="imageUpload" accept="image/*" onchange="handleImageSelect(event)">
 </div>
 
 <div class="postcode-section">
     <input class="postcode-input" type="text" id="startPostcode" placeholder="🏠 Start/Home Postcode">
     <div class="ocr-progress-bar" id="ocrProgressBar"><div class="ocr-progress-fill" id="ocrProgressFill"></div></div>
-    <div class="reminder-text">⚠️ Add Start Postcode first before importing</div>
+    <div class="reminder-text">✅ Now using **CLOUD / EXTERNAL OCR** — works perfectly on large / high‑res files</div>
 </div>
 
 <div class="section">
     <h3>📝 Paste Text (Manual Input)</h3>
     <textarea id="regInput" placeholder="1073969 - Sainsbury's... PF24MTV... York Road Uxbridge UB8 1QW"></textarea>
     <button class="large-btn btn-blue" onclick="processManual()">✅ Process Paste</button>
-</div>
-
-<div class="section" style="display:none;">
-    <h3>⚙️ API Settings</h3>
-    <input type="text" id="ocrApiKey" value="K89415215588957">
 </div>
 
 <div class="section">
@@ -188,6 +179,37 @@ const fallbackAddressMap={
 let originalOrder=[];
 let extractedJobs=[];
 let routeData=[];
+
+// ✅ EXTERNAL / CLOUD OCR — works HIGH‑RESOLUTION
+async function callExternalOCR(file) {
+    setOCRProgress(10);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("apikey", "K89415215588957"); // ✅ keep your key
+    formData.append("language", "eng");
+    formData.append("isOverlayRequired", "false");
+
+    try {
+        setOCRProgress(35);
+        const res = await fetch("https://api.ocr.space/parse/image", {
+            method: "POST",
+            body: formData
+        });
+        setOCRProgress(75);
+        const json = await res.json();
+        setOCRProgress(100);
+
+        if (!json.IsErroredOnProcessing && json.ParsedResults?.[0]?.ParsedText) {
+            return json.ParsedResults[0].ParsedText;
+        } else {
+            throw new Error(json.ErrorMessage || "No text found");
+        }
+    } catch (e) {
+        setOCRProgress(0);
+        alert("❌ Cloud OCR failed — try smaller file or clear image");
+        return null;
+    }
+}
 
 function fixChars(s){return s.toUpperCase();}
 function extractAll(txt){
@@ -380,22 +402,15 @@ function buildTable(list){
 }
 function processManual(){buildTable(extractAll(document.getElementById('regInput').value));}
 
+// ✅ NEW: EXTERNAL OCR HANDLER
 async function handleImageSelect(e){
     const f=e.target.files[0];if(!f)return;
-    setOCRProgress(5);
-    try{
-        const res=await Tesseract.recognize(f,'eng',{psm:6,oem:3,logger:log=>{
-            if(log.status==='recognizing text') setOCRProgress(Math.round(log.progress*100));
-        }});
-        setOCRProgress(100);
-        buildTable(extractAll(res.data.text));
+    const text=await callExternalOCR(f);
+    if(text){
+        buildTable(extractAll(text));
         if(document.getElementById('startPostcode').value.trim()) setTimeout(planOptimisedRoute,300);
-    }catch(err){
-        setOCRProgress(0);
-        alert("❌ OCR failed — try clearer image");
-    }finally{
-        setTimeout(()=>setOCRProgress(0),800);
     }
+    setTimeout(()=>setOCRProgress(0),800);
 }
 
 function exportCSV(){
@@ -404,4 +419,5 @@ function exportCSV(){
     const b=new Blob([csv],{type:"text/csv"});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='job-list.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 </script>
-</body></html>
+</body>
+</html>
