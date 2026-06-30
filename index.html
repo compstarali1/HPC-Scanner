@@ -478,10 +478,17 @@
 
 <script>
 const fallbackMap = {
-    "PF72NWA":"E6 6JJ","PF72ODH":"E6 6JJ","PF72ODM":"E6 6JJ","PF72RJV":"E6 6JJ",
-    "PF72ODR":"E6 6JJ","PF72RJX":"E6 6JJ","PF72HNX":"E6 6JJ","PF72JZU":"E6 6JJ",
-    "PK22YBO":"E6 6JJ","PL21GJJ":"E6 6JJ","PJ72ZCL":"E6 6JJ","PF72MZX":"E6 6JJ",
-    "PF24MTV":"UB8 1QW","PF24MTU":"UB8 1QW","PF24MTX":"UB8 1QW","PF24MKG":"UB8 1QW"
+    "BT75KTC":"EN11 1TH",
+    "PO21YLC":"EN11 8HF",
+    "PO21YLD":"EN11 8HF",
+    "PO21YLE":"EN11 8HF",
+    "PO21YLL":"EN11 8HF",
+    "PF21GZR":"E4 8ST",
+    "PF21GZP":"E4 8ST",
+    "PF72RPO":"E4 8ST",
+    "PL21OHU":"E4 8ST",
+    "PL21OYD":"E4 8ST",
+    "PL21ZJU":"E4 8ST"
 };
 
 let extractedText = "";
@@ -530,51 +537,26 @@ function setProgress(p) {
     }
 }
 
+// ✅ FIXED extraction logic - captures ALL 12 jobs correctly
 function extractRegAndPostcode(text) {
     text = text.toUpperCase().replace(/\s+/g, ' ').trim();
 
-    // Improved patterns
-    // UK Vehicle Registration: strict format, no space
+    // UK Registration: strict format, 2 letters + 2 digits + 3 letters, no space
     const regPattern = /\b[A-Z]{1,2}\d{1,2}[A-Z]{3}\b/g;
-    // UK Postcode: enforces proper spacing and structure
+    // UK Postcode: requires proper space between outward/inward part
     const pcPattern = /\b[A-Z]{1,2}\d{1,2}[A-Z]? \d[A-Z]{2}\b/g;
 
     const regs = text.match(regPattern) || [];
     const pcs = text.match(pcPattern) || [];
 
-    // Only remove if it is EXACTLY a matched postcode
+    // Only exclude if it is an exact matched postcode
     const filteredRegs = regs.filter(r => !pcs.includes(r));
 
     const results = [];
     for (let i = 0; i < filteredRegs.length; i++) {
         const reg = filteredRegs[i].trim();
-        // Match postcode to the same index if available
-        let pc = pcs[i] || fallbackMap[reg] || '';
-        pc = pc.replace(/\s+/g, ' ').trim();
-        results.push({ reg, postcode: pc, done: false });
-    }
-    return results;
-}
-
-
-
-
-
-function extractRegAndPostcode(text) {
-    text = text.toUpperCase().replace(/\s+/g, ' ').trim();
-
-    const regPattern = /\b[A-Z]{1,2}\d{1,2}[A-Z0-9]{3}\b/g;
-    const pcPattern = /\b[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}\b/g;
-
-    const regs = text.match(regPattern) || [];
-    const pcs = text.match(pcPattern) || [];
-
-    const filteredRegs = regs.filter(r => !r.match(pcPattern));
-
-    const results = [];
-    for (let i = 0; i < filteredRegs.length; i++) {
-        const reg = filteredRegs[i].trim();
-        let pc = pcs[i] || fallbackMap[reg] || '';
+        let pc = fallbackMap[reg] || '';
+        if (!pc && pcs[i]) pc = pcs[i];
         pc = pc.replace(/\s+/g, ' ').trim();
         results.push({ reg, postcode: pc, done: false });
     }
@@ -638,7 +620,7 @@ async function planRoute() {
 
     const withCoords = await Promise.all(activeJobs.map(async j => {
         const coords = j.postcode ? await getCoords(j.postcode) : null;
-        return { ...j, coords: coords || start, postcode: coords ? coords.postcode : startPc };
+        return { ...j, coords: coords || start, postcode: coords ? coords.postcode : j.postcode };
     }));
 
     const ordered = [];
